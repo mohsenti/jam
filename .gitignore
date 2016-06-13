@@ -27,3 +27,9 @@
 *.exe
 *.out
 *.app
+
+# Ignore hidden files
+.*
+
+# Ignore database
+*.s3db
