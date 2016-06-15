@@ -28,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
     treeViewModel = new QStandardItemModel();
     treeView->setModel(treeViewModel);
     treeView->setHeaderHidden(true);
-    connect(treeView,&QTreeView::activated,this,&MainWindow::onTreeViewItemActive);
+    connect(treeView, &QTreeView::activated, this, &MainWindow::onTreeViewItemActive);
     //Todo: set rtl indicator
 
     buildCategoryTree();
@@ -43,8 +43,12 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
     scrollArea = new QScrollArea;
     scrollArea->setWidget(otherContainer);
     scrollArea->setWidgetResizable(true);
-    poemLayout = new QVBoxLayout(otherContainer);
-    poemLayout->setAlignment(Qt::AlignmentFlag::AlignTop);
+
+//    poemLayout = new QVBoxLayout;
+//    poemLayout->setAlignment(Qt::AlignmentFlag::AlignTop);
+//
+//    tableLayout = new QGridLayout;
+//    tableLayout->setAlignment(Qt::AlignmentFlag::AlignTop);
 
     //Build Splitter
     splitter = new QSplitter;
@@ -58,7 +62,9 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
     setCentralWidget(mainLayoutContainer);
 }
 
-MainWindow::~MainWindow() { }
+MainWindow::~MainWindow() {
+    removeLayoutWidgets();
+}
 
 
 void MainWindow::buildCategoryTree() {
@@ -84,20 +90,20 @@ void MainWindow::buildCategoryTreeChildren(QStandardItem *standardItem, int pare
 }
 
 void MainWindow::buildPoemList(int id) {
-    vector<PPoem> *data = dbIO->getPoems(id);
 
-    {
-        QLayoutItem *item;
-        while ((item = poemLayout->takeAt(0))) {
-            delete item->widget();
-            delete item;
-        };
-    }
+    removeLayoutWidgets();
+    if (otherContainer->layout())
+        delete otherContainer->layout();
+    poemLayout = new QVBoxLayout;
+    poemLayout->setAlignment(Qt::AlignmentFlag::AlignTop);
+    vector<PPoem> *data = dbIO->getPoems(id);
 
     {
         QPushButton *button;
         for (vector<PPoem>::const_iterator it = data->begin(); it < data->end(); it++) {
             button = new QPushButton(QString::fromStdString((*it)->title));
+            button->setUserData(Qt::UserRole + 1, (QObjectUserData *) (*it));
+            connect(button, &QPushButton::clicked, this, &MainWindow::onPoemClicked);
             poemLayout->addWidget(button);
         }
     }
@@ -107,8 +113,56 @@ void MainWindow::buildPoemList(int id) {
 
 void MainWindow::onTreeViewItemActive(const QModelIndex &index) {
     QExtendedStandardItem *item = (QExtendedStandardItem *) treeViewModel->itemFromIndex(index);
-    buildPoemList(((PCategory)(item->data()))->Id);
-    qDebug() << QString::fromStdString(((PCategory)(item->data()))->name);
+    buildPoemList(((PCategory) (item->data()))->Id);
+    qDebug() << QString::fromStdString(((PCategory) (item->data()))->name);
 }
+
+void MainWindow::buildVerseList(int id) {
+
+    removeLayoutWidgets();
+
+    if (otherContainer->layout())
+        delete otherContainer->layout();
+    tableLayout = new QGridLayout;
+    tableLayout->setAlignment(Qt::AlignmentFlag::AlignTop);
+    vector<PVerse> *data = dbIO->getVerses(id);
+
+    QPushButton *next = new QPushButton("بعدی"), *prev = new QPushButton("قبلی");
+    tableLayout->addWidget(prev, 0, 0);
+    tableLayout->addWidget(next, 0, 1);
+
+    for (vector<PVerse>::const_iterator it = data->begin(); it < data->end(); it++) {
+        QLabel *label = new QLabel(QString::fromStdString((*it)->text));
+        label->setAlignment(Qt::AlignmentFlag::AlignHCenter);
+        tableLayout->addWidget(label, (*it)->vorder + 1, (*it)->position);
+    }
+
+    otherContainer->setLayout(tableLayout);
+}
+
+void MainWindow::onPoemClicked() {
+    QPushButton *button = (QPushButton *) sender();
+    PPoem poem = (PPoem) button->userData(Qt::UserRole + 1);
+    buildVerseList((int) poem->Id);
+}
+
+void MainWindow::removeLayoutWidgets() {
+
+    if (otherContainer->layout()) {
+        QLayoutItem *item;
+        QLayout *layout = otherContainer->layout();
+        while ((item = layout->takeAt(0))) {
+            item->widget()->setUserData(Qt::UserRole + 1, nullptr);
+            delete item->widget();
+            delete item;
+        };
+    }
+}
+
+
+
+
+
+
 
 

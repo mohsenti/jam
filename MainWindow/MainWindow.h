@@ -23,7 +23,8 @@ private:
     void buildCategoryTree();
     void buildCategoryTreeChildren(QStandardItem *standardItem, int parentId);
     void buildPoemList(int id);
-
+    void buildVerseList(int id);
+    void removeLayoutWidgets();
     //menus
     QMenu *fileMenu;
     QAction *closeAction;
@@ -50,7 +51,7 @@ private:
 
 private slots:
     void onTreeViewItemActive(const QModelIndex &index);
-
+    void onPoemClicked();
 };
 
 

@@ -23,6 +23,8 @@ typedef struct {
 
 typedef struct {
     string text;
+    int position;
+    int vorder;
 } Verse, *PVerse;
 
 #endif //JAM_DATABASEMODELS_H

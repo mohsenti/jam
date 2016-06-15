@@ -25,7 +25,7 @@ vector<PCategory> *DatabaseIO::getCategories(int parentId) {
     vector<PCategory> *aVector = new vector<PCategory>();
     Cursor *cursor = NULL;
     stringstream query;
-    query << "SELECT * FROM cat WHERE parent_id = " << parentId;
+    query << "SELECT * FROM cat WHERE parent_id = " << parentId << " ORDER BY text";
     if (dbo->query(query.str(), cursor)) {
         if (cursor == NULL)
             return aVector;
@@ -71,6 +71,27 @@ vector<PPoem> *DatabaseIO::getPoems(int categoryId) {
 
 vector<PVerse> *DatabaseIO::getVerses(int poemId) {
     vector<PVerse> *aVector = new vector<PVerse>();
+
+    Cursor *cursor = NULL;
+    stringstream query;
+    query << "SELECT * FROM verse WHERE poem_id = " << poemId;
+    if (dbo->query(query.str(), cursor)) {
+        if (cursor == NULL)
+            return aVector;
+        if (cursor->first()) {
+            do {
+                PVerse verse = new Verse;
+                verse->vorder = cursor->asInteger(1);
+                verse->position = cursor->asInteger(2);
+                verse->text = cursor->asString(3);
+                aVector->push_back(verse);
+            } while (cursor->next());
+        }
+        delete cursor;
+    } else {
+        qDebug() << QString::fromStdString(dbo->getError());
+    }
+
     return aVector;
 }
 
